@@ -13,7 +13,7 @@ export const levelFor = xp => Math.min(10, 1 + Math.floor(Math.sqrt(Math.max(0, 
 export const xpFor = level => (level - 1) ** 2 * 75;
 export const maxHealth = xp => 100 + (levelFor(xp) - 1) * 18;
 export const upgradeCost = rank => 35 + rank * 30;
-export const freshSave = () => ({ version: 1, xp: 0, gold: 0, kills: 0, weapon: 0, upgrades: 0, potions: 3, bossDefeated: false });
+export const freshSave = () => ({ version: 1, xp: 0, gold: 0, kills: 0, weapon: 0, upgrades: 0, potions: 3, bossDefeated: false, lanternBlessing: false, courier: { accepted: false, startKills: 0, claimed: false } });
 export function sanitizeSave(raw) {
   const clean = freshSave();
   if (!raw || raw.version !== 1) return clean;
@@ -23,6 +23,10 @@ export function sanitizeSave(raw) {
   }
   if (Number.isInteger(raw.weapon) && WEAPONS[raw.weapon]?.level <= levelFor(clean.xp)) clean.weapon = raw.weapon;
   clean.bossDefeated = raw.bossDefeated === true;
+  clean.lanternBlessing = raw.lanternBlessing === true;
+  if (raw.courier?.accepted === true && Number.isFinite(raw.courier.startKills)) {
+    clean.courier = { accepted: true, startKills: Math.max(0, Math.min(clean.kills, Math.floor(raw.courier.startKills))), claimed: raw.courier.claimed === true };
+  }
   return clean;
 }
 /** A directional melee sector; a target directly underfoot can always be hit. */

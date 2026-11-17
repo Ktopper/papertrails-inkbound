@@ -44,3 +44,35 @@ test('new melee timing lands hits during a short, bounded swing', async()=>{
   const first=swingPose(.12,.28,1),second=swingPose(.12,.28,2),rest=swingPose(.28,.28,1);
   assert(first.yaw*second.yaw<0);assert.equal(rest.yaw,0);assert(Math.abs(rest.arm)<1e-9);
 });
+
+test('courier contract counts only new victories and pays exactly once after reload',async()=>{
+  const {courierQuest,talkAction}=await import('../src/rpg/characters.js');
+  let save={...freshSave(),kills:20,potions:4};
+  assert.equal(courierQuest(save).state,'offer');assert.equal(talkAction(save,'claimDelivery'),null);
+  talkAction(save,'acceptDelivery');save.kills+=5;assert.equal(courierQuest(save).state,'active');
+  assert.equal(talkAction(save,'acceptDelivery'),null);assert.equal(save.courier.startKills,20);
+  save=sanitizeSave(JSON.parse(JSON.stringify(save)));save.kills++;
+  assert.equal(courierQuest(save).state,'ready');assert(talkAction(save,'claimDelivery'));
+  assert.equal(save.gold,65);assert.equal(save.potions,5);
+  save=sanitizeSave(JSON.parse(JSON.stringify(save)));assert.equal(talkAction(save,'claimDelivery'),null);assert.equal(save.gold,65);
+});
+test('old characters retain progress, malformed contracts are safe, and blessings persist',async()=>{
+  const {talkAction}=await import('../src/rpg/characters.js');
+  const save=sanitizeSave({version:1,xp:300,kills:7,gold:30,courier:{accepted:true,startKills:Infinity},lanternBlessing:'yes'});
+  assert.equal(save.xp,300);assert.equal(save.courier.accepted,false);assert.equal(save.lanternBlessing,false);
+  assert(talkAction(save,'blessing'));assert.equal(talkAction(save,'blessing'),null);
+  assert.equal(sanitizeSave(JSON.parse(JSON.stringify(save))).lanternBlessing,true);
+});
+test('every paper figure has a grounded articulated rig with finite combat poses',async()=>{
+  const THREE=await import('three');const {createActor}=await import('../src/rpg/actors.js');
+  for(const kind of ['imp','wolf','knight','boss','camp','courier','moth']){
+    const actor=createActor(kind,1);let meshes=0;actor.group.traverse(n=>{if(n.isMesh)meshes++;});
+    assert(meshes>=20,`${kind} has a full sculpted body`);assert(actor.joints.head&&actor.joints.body);
+    for(const mode of ['idle','approach','windup','strike','recover'])for(let i=0;i<=10;i++){
+      actor.update(1/60,{time:i*.1,moving:mode==='approach'?1:0,direction:{x:1,z:-1},mode,progress:i/10,enraged:true,talking:true});
+      actor.group.updateMatrixWorld(true);actor.group.traverse(n=>assert(n.matrixWorld.elements.every(Number.isFinite)));
+    }
+    const bounds=new THREE.Box3().setFromObject(actor.rig);assert(bounds.max.y>0.6&&bounds.max.y<1.5);assert(bounds.min.y>-.15);
+    actor.dispose();
+  }
+});

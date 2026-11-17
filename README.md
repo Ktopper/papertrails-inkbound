@@ -6,7 +6,7 @@ Built from [Ktopper/papertrails-fervor](https://github.com/Ktopper/papertrails-f
 
 ## Play
 
-Run locally using the instructions below. After the source upload and GitHub Pages deployment are complete, the game will be available at [the Pages address](https://ktopper.github.io/papertrails-inkbound/).
+[Play The Inkbound](https://ktopper.github.io/papertrails-inkbound/) · [Enter Moonveil Ruins](https://ktopper.github.io/papertrails-inkbound/?level=moonveil&quality=med). You can also run locally using the instructions below.
 
 Desktop keyboard and mouse recommended. Touch devices can tap the ground to walk and use the Strike, Heavy, and Dodge buttons.
 
@@ -17,6 +17,20 @@ Choose **The Heartland** or **Moonveil Ruins** from the title screen or pause me
 Moonveil is a new authored forest level with generated cut-paper trees, ivy arches, crystals, ferns, broken columns, lantern shrines, a textured moss floor, and a painted moonlit backdrop. It includes walkable archways, collision boundaries, three clearings, fireflies, a custom atlas, and separate character progress. The three images were created with the built-in image generation tool; exact prompts are recorded in `public/textures/moonveil/PROMPTS.txt`.
 
 Melee attacks now animate the shoulder, torso, and weapon together: anticipation, a fast cross-body cut, follow-through, and recovery. The sword alternates swing directions. Hold J / left click for repeated strikes, or K / right click for repeated heavy attacks. Base attack times: sword **0.28 s**, axe **0.48 s**, spear **0.35 s** (about 30–34% faster than the first build). Stamina still limits sustained attacks.
+
+## The company between the pages
+
+The cast now uses articulated 3D paper figures, with hinged arms and legs, turning heads, layered clothes, armor, capes, and carried props. The enemies face their targets instead of rotating like flat billboards.
+
+- **Inklings:** pointed ears, rust-colored scarves, ink bottles, and oversized quill daggers. They weave toward the player and commit to a slash.
+- **Briar hounds:** four moving legs, thorn ridges, teeth, amber eyes, and wagging tails. Their crouch tells you when to sidestep the leap.
+- **Hollow knights:** plated shoulders, helmets, swords, and shields. Frontal armor resists light attacks; heavy attacks or flanking bypass it.
+- **The Hollow Warden:** a taller armored figure with a floating crown, glowing heart, and a cape of loose pages. Below half health its crown rises and its circular attacks speed up.
+- **Mara:** a cartographer with maps, a lantern, and a satchel of scrolls. She still offers free rest and weapon upgrades.
+- **Ivo Mossmail:** a mushroom courier with an oversized parcel pack. Accept his delivery, defeat six new enemies, and return for 65 gold and two tonics.
+- **Pip Wick:** a moth lamplighter with patterned wings and glowing antennae. His free permanent blessing reduces incoming damage by 10%.
+
+Press **E** or tap the interaction button near a character to talk. NPCs offer dialogue and combat hints, and the journal tracks Ivo’s delivery and Pip’s blessing. Existing saves remain compatible; quest rewards can only be claimed once.
 
 ## The adventure
 
@@ -42,7 +56,7 @@ This is a complete first playable chapter loop, intended as a foundation for exp
 | Dodge | Space, in your movement direction |
 | Healing tonic | H |
 | Equip sword / axe / spear | 1 / 2 / 3 |
-| Speak to Mara | E, near her golden circle |
+| Speak to a nearby character | E, near Mara, Ivo, or Pip |
 | Journal | R |
 | Atlas | Tab; Escape closes |
 | Pause | Escape |
@@ -79,9 +93,11 @@ Useful URL options: `?quality=med` for balanced rendering, `?quality=low` for sl
 - `src/rpg/rules.js`: weapon/enemy balance, progression, save validation, and hit geometry.
 - `src/rpg/combat-motion.js`: swing phases, weapon timing, and body animation.
 - `src/world/moonveil.js` and `src/game/moonveilmap.js`: the new generated-art forest level and map.
-- `src/rpg/art.js`: original procedural paper enemies, Mara, and weapon meshes.
+- `src/rpg/actors.js`: articulated paper figures and their walking, attack, and idle animations.
+- `src/rpg/characters.js`: character identities, delivery progress, and one-time rewards.
+- `src/rpg/art.js`: melee weapon meshes.
 - `src/rpg/ui.js` and `style.css`: title screen, HUD, journal, camp, pause, death, and victory.
-- `tests/rules.test.js`: meaningful coverage of hit sectors, weapon reach, progression, malformed saves, persistence, and quest phases.
+- `tests/rules.test.js`: coverage of melee geometry, swing timing, progression, malformed saves, reward persistence, and articulated actor poses.
 - `src/world`, `src/render`, `src/life`: inherited Papertrails world and rendering systems.
 
 In development only, `?debug=1` adds a read-only combat snapshot to the canvas’s `data-diagnostics` attribute. Production builds omit it.
