@@ -1,8 +1,8 @@
 // Stable item IDs are shared by rewards, equipment, and versioned saves.
 export const ITEMS = {
-  blade: { name: 'Wayfarer’s blade', slot: 'weapon', weapon: 0, icon: 'sword', color: '#d2b27b', description: 'Quick cuts and a three-hit flourish. 22 damage · 0.28 s · 10 stamina.', source: 'Mara’s waystation' },
-  cleaver: { name: 'Briarwood cleaver', slot: 'weapon', weapon: 1, icon: 'axe', color: '#bc7758', description: 'Wide, heavy cuts. 36 damage · 0.48 s · 17 stamina. Heavy blows break a knight’s guard.', source: 'Abandoned mill · defeat the hinge keeper' },
-  pike: { name: 'Dawnkeeper’s pike', slot: 'weapon', weapon: 2, icon: 'spear', color: '#82a898', description: 'A long, precise thrust. 27 damage · 0.35 s · 13 stamina.', source: 'Legacy level 3 unlock · later story chapter' },
+  blade: { name: 'Wayfarer’s blade', slot: 'weapon', weapon: 0, icon: 'sword', color: '#d2b27b', description: 'Quick cuts and a three-hit flourish. A nimble blade for close encounters.', source: 'Mara’s waystation' },
+  cleaver: { name: 'Briarwood cleaver', slot: 'weapon', weapon: 1, icon: 'axe', color: '#bc7758', description: 'Wide, heavy cuts. Heavy blows break a knight’s guard.', source: 'Abandoned mill · defeat the hinge keeper' },
+  pike: { name: 'Dawnkeeper’s pike', slot: 'weapon', weapon: 2, icon: 'spear', color: '#82a898', description: 'A long, precise thrust. Keep enemies at the tip of its folded point.', source: 'Legacy level 3 unlock · later story chapter' },
   'patched-coat': { name: 'Patched coat', slot: 'coat', icon: 'shield', armor: .05, color: '#9a7757', description: '5% less incoming damage. Soft paper, carefully mended.', source: 'Mara’s waystation' },
   'binders-coat': { name: 'Bookbinder’s coat', slot: 'coat', icon: 'shield', armor: .08, color: '#588d7b', description: '8% less incoming damage. Folded green shoulder panels protect without slowing you.', source: 'Three workshops · restore every hinge' },
   'travel-boots': { name: 'Travel boots', slot: 'boots', icon: 'leaf', color: '#9a7757', description: 'Reliable paper soles. Normal movement and dodge distance.', source: 'Mara’s waystation' },
