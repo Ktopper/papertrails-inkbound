@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createWeapon, disposeObject } from './art.js';
 import { cardstockPrint, cardGeometry, paperRectangle, paperDisc, foldedPaperBox } from './cardstock.js';
+import { enemyPose } from './enemy-motion.js';
 
 // Articulated puppets made of printed cardstock; local +Z is forward.
 // Folded boxes and simple faceted volumes carry the same paper finish as the hero;
@@ -141,20 +142,22 @@ export function createActor(kind, size = 1, {paperMaterials=null} = {}) {
       if(kind==='wolf') {
         for(const side of [-1,1])for(const back of [-1,1])joints[`leg${side}${back}`].rotation.x=walk*side*back;
         joints.tail.rotation.y=Math.sin(time*6)*.3;
-        if(mode==='windup'){body.rotation.x=-.22;rig.position.y-=.05*progress;head.rotation.x=-.25;}
-        if(mode==='strike'){rig.position.y+=Math.sin(progress*Math.PI)*.15;body.rotation.x=.22;}
       } else {
         joints.legL.rotation.x=walk;joints.legR.rotation.x=-walk;
         joints.armL.rotation.set(-walk*.6,0,.1);joints.armR.rotation.set(walk*.6,0,-.1);
         joints.cape.rotation.x=.1+Math.sin(time*3)*.07+gait*.15;
-        if(mode==='windup'){joints.armR.rotation.x=-1.7*progress;body.rotation.y=-.55*progress;joints.armL.rotation.x=-.6;head.rotation.x=-.13;}
-        if(mode==='strike'){const swing=Math.sin(Math.min(1,progress*1.7)*Math.PI/2);joints.armR.rotation.x=-1.7+2.7*swing;body.rotation.y=-.55+1.1*swing;body.rotation.x=.18*swing;}
-        if(mode==='recover'){joints.armR.rotation.x=.65*(1-progress);body.rotation.x=.1*(1-progress);}
         if(talking){joints.armL.rotation.z=.35+Math.sin(time*3)*.12;head.rotation.x=Math.sin(time*4)*.08;}
       }
       if(joints.lantern)joints.lantern.rotation.z=Math.sin(time*2.7)*.12;
       if(joints.wingL){joints.wingL.rotation.y=Math.sin(time*3)*.16-.2;joints.wingR.rotation.y=-Math.sin(time*3)*.16+.2;}
       if(joints.crown){joints.crown.rotation.y=enraged?time*.5:0;joints.crown.position.y=.19+(enraged?.08+Math.sin(time*3)*.03:0);}
+      const pose=cutout?enemyPose(kind,mode,progress):null;
+      if(pose){
+        body.rotation.set(pose.bodyX,pose.bodyY,pose.bodyZ);head.rotation.x=pose.headX;rig.position.y+=pose.crouch+pose.hop;
+        if(kind==='wolf'){for(const side of [-1,1])for(const back of [-1,1])joints[`leg${side}${back}`].rotation.x=pose.legs*back;joints.tail.rotation.x=mode==='windup'?-.5:0;}
+        else{joints.armR.rotation.set(pose.armX,0,pose.armZ);joints.armL.rotation.x=pose.shieldX;}
+        if(joints.crown)joints.crown.position.y+=pose.crown;
+      }else if(kind==='wolf')joints.tail.rotation.x=0;
       for(const m of materials){m.emissive.set(flash>0?'#e2b98b':m.userData.baseGlow?m.color:0x000000);m.emissiveIntensity=flash>0?.8:m.userData.baseGlow*(enraged?1.7:1);}
       if(flash>0)body.rotation.z=-.12;
     },

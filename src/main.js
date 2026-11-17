@@ -117,7 +117,7 @@ async function boot() {
     post.setFocus(follow.focusPoint);
     post.render(dt);
     game.atlasmap.render(); // Drawn over the finished frame; no-op while closed.
-    if (import.meta.env.DEV && params.has('debug') && state.frame % 15 === 0) canvas.dataset.diagnostics = JSON.stringify({...game.adventure.snapshot(),visibility:visibility.snapshot()});
+    if (import.meta.env.DEV && params.has('debug') && state.frame % 15 === 0) canvas.dataset.diagnostics = JSON.stringify({...game.adventure.snapshot(),visibility:visibility.snapshot(),world:world.snapshot?.()});
   }
 
   const loop = createLoop({ update, render });

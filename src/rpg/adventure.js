@@ -5,6 +5,8 @@ import { mulberry32 } from '../core/rng.js';
 import { WEAPONS, ENEMIES, freshSave, sanitizeSave, levelFor, maxHealth, upgradeCost, inStrike, questFor } from './rules.js';
 import { createWeapon, disposeObject } from './art.js';
 import { createActor } from './actors.js';
+import { ENEMY_ATTACKS, windupDuration, attackProgress, enemyAttackHits } from './enemy-attacks.js';
+import { createTelegraph } from './telegraph.js';
 import { CHARACTERS, talkAction, courierQuest } from './characters.js';
 import { attackTiming, swingPose } from './combat-motion.js';
 import { createUI } from './ui.js';
@@ -29,7 +31,7 @@ export function createAdventure(ctx) {
   let weaponMesh=createWeapon(save.weapon);weaponPivot.add(weaponMesh);weaponMesh.scale.setScalar(1.22);
   const guardRing=new THREE.Mesh(new THREE.RingGeometry(.4,.44,40,1,0,Math.PI*1.25),new THREE.MeshBasicMaterial({color:'#a6d6cb',transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));guardRing.rotation.x=-Math.PI/2;guardRing.position.y=.06;guardRing.visible=false;traveller.group.add(guardRing);
   const ui=createUI({
-    start(){if(!ready)return;started=true;ui.start();controls.clearTarget();bus.emit('input:first',{});music.chime?.('lantern');ui.toast('Mara awaits beside the golden circle. Press E to speak.');persist();},
+    start(){if(!ready)return;started=true;world.reveal?.();ui.start();controls.clearTarget();bus.emit('input:first',{});music.chime?.('lantern');ui.toast('Mara awaits beside the golden circle. Press E to speak.');persist();},
     attack:()=>strike(false),heavy:()=>strike(true),dodge,potion,
     equip,
     journal:()=>openPanel('journal'),pause:()=>openPanel('pause'),
@@ -60,7 +62,7 @@ export function createAdventure(ctx) {
       projected.copy(p);projected.y+=n.id==='moth'?.8:1;projected.project(follow.camera);if(d<4.5&&projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1)labels.push({id:n.id,x:(projected.x*.5+.5)*innerWidth,y:(-.5*projected.y+.5)*innerHeight,near:near===n});
     }ui.characters(labels);
   }
-  function openPanel(type){if(!started)return;if(panel==='death'&&type!=='death')return;game.atlasmap.show(false);panel=type;heldLight=heldHeavy=mouseHeld=false;guarding=false;guardRing.visible=false;traveller.model.visible=true;attack=null;dash=0;controls.clearTarget();ui.panel(type,save);persist();}
+  function openPanel(type){if(!started)return;if(panel==='death'&&type!=='death')return;game.atlasmap.show(false);panel=type;heldLight=heldHeavy=mouseHeld=false;guarding=false;guardRing.visible=false;traveller.model.visible=true;attack=null;dash=0;controls.clearTarget();ui.threat(null);ui.panel(type,save);persist();}
   function closePanel(force=false){if(panel==='death'&&!force)return;panel=null;ui.close();controls.clearTarget();}
   function replaceWeapon(){disposeObject(weaponMesh);weaponMesh=createWeapon(save.weapon);weaponPivot.add(weaponMesh);weaponMesh.scale.setScalar(1.22);}
   function equip(index){if(blocked())return;const w=WEAPONS[index];if(!w)return;if(levelFor(save.xp)<w.level){ui.toast(`${w.name} unlocks at level ${w.level}.`);return;}if(attack)return;save.weapon=index;replaceWeapon();persist();ui.toast(w.name+' · '+w.description);}
@@ -100,7 +102,7 @@ export function createAdventure(ctx) {
     for(const e of enemies){if(e.hp<=0||!inStrike(traveller.position,e.group.position,a.direction,a.w.reach,a.w.arc,e.spec.size*.19)||!lineClear(traveller.position,e.group.position,0))continue;
       const frontalGuard=e.kind==='knight'&&inStrike(e.group.position,traveller.position,e.direction,10,1.05);
       const damage=Math.round((a.w.damage+save.upgrades*4+(levelFor(save.xp)-1)*3)*(a.heavy?1.9:a.combo===3?1.4:1)*(frontalGuard&&!a.heavy?.55:1));
-      e.hp=Math.max(0,e.hp-damage);e.stun=a.heavy?.65:.2;e.flash=.14;e.mode='recover';e.timer=.55;hits++;
+      e.hp=Math.max(0,e.hp-damage);e.stun=a.heavy?.65:.2;e.flash=.14;e.mode='recover';e.recovery=.55;e.timer=.55;hits++;
       textAt(String(damage)+(a.combo===3&&!a.heavy?'!':''),e.group.position,a.heavy?'#ffdc8a':'#fff2d9',e.spec.size);burst(e.group.position,a.w.color,5);
       const dx=e.group.position.x+a.direction.x*.18,dz=e.group.position.z+a.direction.z*.18;if(traveller.canPass(dx,dz))e.group.position.set(dx,world.heightAt(dx,dz)||0,dz);
       if(frontalGuard&&!a.heavy)textAt('ARMORED',e.group.position,'#b9cbd0',e.spec.size+.2);
@@ -110,8 +112,7 @@ export function createAdventure(ctx) {
   }
   function damagePlayer(e){
     if(invincible>0||grace>0||health<=0)return;
-    const p=traveller.position,d=e.group.position.distanceTo(p);if(d>e.spec.reach+.16||!lineClear(e.group.position,p,0))return;
-    if(e.kind!=='boss'&&!inStrike(e.group.position,p,e.direction,e.spec.reach,e.kind==='wolf'?.7:1.2,.16))return;
+    const p=traveller.position;if(!enemyAttackHits(e.attack,e.origin,e.direction,p)||!lineClear(e.group.position,p,0))return;
     let damage=e.spec.damage*(e.enraged?1.25:1)*(save.lanternBlessing?.9:1);
     const toward=e.group.position.clone().sub(p).setY(0).normalize();
     if(guarding&&toward.dot(traveller.moveDir)>.05&&stamina>=16){stamina-=16;damage=Math.ceil(damage*.15);textAt('GUARD',p,'#b6ded0');sound(600,.1,'triangle');}
@@ -129,26 +130,24 @@ export function createAdventure(ctx) {
       return {x,z};
     }return null;
   }
-  function spawn(kind){const point=findSpawn(kind==='boss'?3:2.1,kind==='boss'?4.2:3.5);if(!point)return false;const spec=ENEMIES[kind],actor=createActor(kind,spec.size,{paperMaterials:materials});actor.group.position.set(point.x,world.heightAt(point.x,point.z)||0,point.z);scene.add(actor.group);const barBack=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.034),new THREE.MeshBasicMaterial({color:'#3d3031'})),bar=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.025),new THREE.MeshBasicMaterial({color:kind==='boss'?'#c99ccf':'#c98468'}));barBack.position.y=spec.size+0.12;bar.position.y=spec.size+0.12;bar.position.z=.003;const healthBar=new THREE.Group();healthBar.add(barBack,bar);actor.group.add(healthBar);enemies.push({...actor,spec,kind,hp:spec.hp,maxHp:spec.hp,mode:'approach',timer:1,stun:0,flash:0,age:0,bar,barBack,healthBar,direction:new THREE.Vector3(0,0,1),attackDuration:kind==='wolf'?.38:.3,hit:false,recovery:spec.cooldown,side:random()>.5?1:-1,enraged:false});return true;}
-  function clearEnemies(){for(const e of enemies)e.dispose();enemies.length=0;}
+  function spawn(kind){const point=findSpawn(kind==='boss'?3:2.1,kind==='boss'?4.2:3.5);if(!point)return false;const spec=ENEMIES[kind],actor=createActor(kind,spec.size,{paperMaterials:materials});actor.group.position.set(point.x,world.heightAt(point.x,point.z)||0,point.z);scene.add(actor.group);const barBack=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.034),new THREE.MeshBasicMaterial({color:'#3d3031'})),bar=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.025),new THREE.MeshBasicMaterial({color:kind==='boss'?'#c99ccf':'#c98468'}));barBack.position.y=spec.size+0.12;bar.position.y=spec.size+0.12;bar.position.z=.003;const healthBar=new THREE.Group();healthBar.add(barBack,bar);actor.group.add(healthBar);enemies.push({...actor,spec,kind,hp:spec.hp,maxHp:spec.hp,mode:'approach',timer:1,stun:0,flash:0,age:0,bar,barBack,healthBar,direction:new THREE.Vector3(0,0,1),attack:ENEMY_ATTACKS[kind],telegraph:createTelegraph(ENEMY_ATTACKS[kind]),origin:actor.group.position.clone(),windup:windupDuration(kind),attackDuration:ENEMY_ATTACKS[kind].duration,hit:false,recovery:spec.cooldown,side:random()>.5?1:-1,enraged:false});scene.add(enemies.at(-1).telegraph.group);return true;}
+  function clearEnemies(){for(const e of enemies){e.telegraph.dispose();e.dispose();}enemies.length=0;}
   function moveEnemy(e,dx,dz,dt){const p=e.group.position,step=e.spec.speed*(e.enraged?1.3:1)*dt;const a=Math.atan2(dz,dx);for(const offset of [0,.6*e.side,1.2*e.side,1.7*e.side,-.6*e.side]){const nx=p.x+Math.cos(a+offset)*step,nz=p.z+Math.sin(a+offset)*step;if(world.clearance(nx,nz)>.1){p.set(nx,world.heightAt(nx,nz)||0,nz);return;}}}
   function updateEnemies(dt){
     const p=traveller.position;
     for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.age+=dt;e.flash=Math.max(0,e.flash-dt);e.stun=Math.max(0,e.stun-dt);
       const d=e.group.position.distanceTo(p);
-      if(e.hp<=0||d>13){if(e.kind==='boss'&&e.hp>0)bossSpawned=false;e.dispose();enemies.splice(i,1);continue;}
+      if(e.hp<=0||d>13){if(e.kind==='boss'&&e.hp>0)bossSpawned=false;e.telegraph.dispose();e.dispose();enemies.splice(i,1);continue;}
       e.healthBar.rotation.y=Math.atan2(follow.camera.position.x-e.group.position.x,follow.camera.position.z-e.group.position.z);
       e.bar.scale.x=e.hp/e.maxHp;e.bar.position.x=-(1-e.hp/e.maxHp)*e.spec.size*.325;e.bar.visible=e.barBack.visible=e.hp<e.maxHp||d<2;
-      const windup=e.spec.windup*(e.enraged?.7:1),progress=e.mode==='windup'?1-e.timer/windup:e.mode==='strike'?1-e.timer/e.attackDuration:e.mode==='recover'?1-e.timer/e.recovery:0;
-      e.ring.visible=e.mode==='windup'||e.mode==='strike';e.ring.material.color.set(e.kind==='boss'?'#b37dca':'#dc7054');
-      e.ring.material.opacity=e.mode==='strike'?.9:.35+progress*.5;
-      e.ring.scale.setScalar((e.spec.reach/(e.spec.size*.4))*(e.mode==='windup'?.55+.45*progress:1));
+      const progress=attackProgress(e.mode,e.timer,e.windup,e.attackDuration,e.recovery);
+      e.ring.visible=false;e.telegraph.update(e.mode,progress,e.origin,e.direction);
       e.update(dt,{time:e.age,moving:e.mode==='approach'&&e.stun<=0&&grace<=0?1:0,direction:e.direction,mode:e.mode,progress:Math.max(0,Math.min(1,progress)),flash:e.flash,enraged:e.enraged});
       if(e.kind==='boss'&&e.hp<e.maxHp*.5&&!e.enraged){e.enraged=true;ui.toast('The Warden’s crown breaks free — its attacks quicken.');burst(e.group.position,'#c99dd4',20);}
       if(e.stun>0||grace>0)continue;
       if(e.mode==='approach'){
         e.direction.copy(p).sub(e.group.position).setY(0).normalize();
-        if(d<e.spec.reach+.05&&lineClear(e.group.position,p,0)){e.mode='windup';e.timer=windup;}
+        if(d<e.attack.reach*.9&&lineClear(e.group.position,p,0)&&enemies.filter(other=>other!==e&&['windup','strike'].includes(other.mode)).length<2){e.mode='windup';e.windup=windupDuration(e.kind,e.enraged);e.timer=e.windup;e.origin.copy(e.group.position);sound(e.attack.sound,.16,'triangle',.025);}
         else if(d>0){const sideStep=e.kind==='imp'&&d>1.2?Math.sin(e.age*3)*.35:0;moveEnemy(e,e.direction.x+e.direction.z*sideStep,e.direction.z-e.direction.x*sideStep,dt);}
       } else if(e.mode==='windup'){
         // Facing is locked during the tell: a sideways dodge can avoid the blow.
@@ -156,11 +155,13 @@ export function createAdventure(ctx) {
         if(e.timer<=0){e.mode='strike';e.timer=e.attackDuration;e.hit=false;}
       } else if(e.mode==='strike'){
         e.timer-=dt;
-        if(e.kind==='wolf'&&e.timer>e.attackDuration*.45)moveEnemy(e,e.direction.x,e.direction.z,dt*1.6);
-        if(!e.hit&&e.timer<=e.attackDuration*.55){e.hit=true;damagePlayer(e);if(e.kind==='boss'){burst(e.group.position,'#bd8ecb',15);sound(50,.25,'sawtooth',.03);}}
+        if(e.kind==='wolf'){const t=Math.min(1,(1-e.timer/e.attackDuration)/e.attack.hitAt),x=e.origin.x+e.direction.x*e.attack.leap*t,z=e.origin.z+e.direction.z*e.attack.leap*t;if(lineClear(e.group.position,{x,z},.1))e.group.position.set(x,world.heightAt(x,z)||0,z);}
+        if(!e.hit&&e.timer<=e.attackDuration*(1-e.attack.hitAt)){e.hit=true;damagePlayer(e);if(e.kind==='boss'){burst(e.group.position,'#bd8ecb',15);sound(50,.25,'sawtooth',.03);}}
         if(e.timer<=0){e.mode='recover';e.recovery=e.spec.cooldown*(e.enraged?.75:1);e.timer=e.recovery;}
       } else {e.timer-=dt;if(e.timer<=0)e.mode='approach';}
     }
+    const warning=enemies.filter(e=>e.mode==='windup').sort((a,b)=>a.timer-b.timer)[0];
+    ui.threat(warning?{name:warning.spec.name,attack:warning.attack.name,hint:warning.attack.hint,progress:1-warning.timer/warning.windup}:null);
   }
   function updateEffects(dt){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.life-=dt;if(e.life<=0){disposeObject(e.mesh);effects.splice(i,1);continue;}e.mesh.material.opacity=e.life/e.max;if(e.slash)e.mesh.scale.multiplyScalar(1+dt*1.7);else{e.vy-=dt*4;e.mesh.position.x+=e.vx*dt;e.mesh.position.z+=e.vz*dt;e.mesh.position.y+=e.vy*dt;e.mesh.rotation.x+=dt*6;e.mesh.rotation.z+=dt*4;}}}
   function onKey(e){
@@ -220,7 +221,7 @@ export function createAdventure(ctx) {
       }
       hudTimer-=dt;if(hudTimer<=0){hudTimer=.1;const boss=enemies.find(e=>e.kind==='boss');ui.update(save,health,stamina,nearbyCharacter()?.id,world.biomeAt(traveller.position.x,traveller.position.z).replace('heartland','The Heartland').replace('pinewood','The Pinewood').toUpperCase(),boss,guarding);const target=boss?.group.position||campPos,dx=target.x-traveller.position.x,dz=target.z-traveller.position.z;const right=new THREE.Vector3().setFromMatrixColumn(follow.camera.matrixWorld,0),dist=Math.hypot(dx,dz);ui.waypoint(`${boss?'Hollow Warden':'Mara’s waystation'} · ${dist.toFixed(0)}m`,Math.atan2(dx*right.x+dz*right.z,-(-dx*right.z+dz*right.x)));}
     },
-    snapshot(){return {save:{...save},health,stamina,started,panel,dash,guarding,attack:attack?.heavy?'heavy':attack?'light':null,position:{x:traveller.position.x,z:traveller.position.z},camp:{x:campPos.x,z:campPos.z},npcs:npcs.map(n=>({id:n.id,placed:n.placed,x:n.group.position.x,z:n.group.position.z})),delivery:courierQuest(save),enemies:enemies.map(e=>({kind:e.kind,hp:e.hp,mode:e.mode,x:e.group.position.x,z:e.group.position.z})),quest:questFor(save)};},
+    snapshot(){return {save:{...save},health,stamina,started,panel,dash,guarding,attack:attack?.heavy?'heavy':attack?'light':null,position:{x:traveller.position.x,z:traveller.position.z},camp:{x:campPos.x,z:campPos.z},npcs:npcs.map(n=>({id:n.id,placed:n.placed,x:n.group.position.x,z:n.group.position.z})),delivery:courierQuest(save),enemies:enemies.map(e=>({kind:e.kind,hp:e.hp,mode:e.mode,timer:+e.timer.toFixed(2),windup:e.windup,attack:e.attack.name,origin:{x:e.origin.x,z:e.origin.z},direction:{x:e.direction.x,z:e.direction.z},x:e.group.position.x,z:e.group.position.z})),quest:questFor(save)};},
     dispose(){persist();clearEnemies();for(const e of effects)disposeObject(e.mesh);for(const n of npcs)n.dispose();disposeObject(weaponMesh);disposeObject(guardRing);weaponPivot.removeFromParent();ui.dispose();audioCtx?.close();window.removeEventListener('keydown',onKey);window.removeEventListener('keyup',onUp);window.removeEventListener('blur',onBlur);window.removeEventListener('pagehide',persist);window.removeEventListener('pointerup',pointerUp);window.removeEventListener('pointercancel',pointerUp);document.removeEventListener('visibilitychange',onVisibility);canvas.removeEventListener('pointerdown',onPointer);canvas.removeEventListener('pointermove',point);},
   };
 }

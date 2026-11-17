@@ -75,8 +75,8 @@ export function createPlayerVisibility({scene,world,camera,traveller,artTexture=
     if(world.cards) {
       world.group.updateWorldMatrix(true,true);
       for(const card of world.cards) {
-        const mesh=card.mesh;if(!mesh.visible)continue;
-        result.push({key:mesh.uuid,name:`Moonveil ${['tree','arch','crystal','fern','column','lantern'][card.kind]}`,geometry:mesh.geometry,material:mesh.material,matrix:mesh.matrixWorld,show:v=>{mesh.visible=v;}});
+        const mesh=card.mesh;if(!mesh.visible||!mesh.parent.visible||(card.anchor&&!card.anchor.visible))continue;
+        result.push({key:mesh.uuid,name:card.asset||`Moonveil ${['tree','arch','crystal','fern','column','lantern'][card.kind]}`,geometry:mesh.geometry,material:mesh.material,matrix:mesh.matrixWorld,show:v=>{mesh.visible=v;}});
       }
     } else if(world.activeTiles) {
       world.group.updateWorldMatrix(true,true);

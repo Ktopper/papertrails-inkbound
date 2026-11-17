@@ -4,10 +4,10 @@ export const WEAPONS = [
   { id: 'spear', name: 'Dawnkeeper’s pike', short: 'Spear', level: 3, damage: 27, reach: 1.65, arc: 0.65, speed: 0.35, cost: 13, color: '#9fddd1', description: 'Long, precise thrusts. Keep dangerous enemies at a distance.' },
 ];
 export const ENEMIES = {
-  imp: { name: 'Inkling', hp: 44, speed: 0.72, damage: 9, reach: 0.5, windup: 0.8, cooldown: 1.45, xp: 22, gold: 9, size: 0.58 },
-  wolf: { name: 'Briar hound', hp: 65, speed: 1.05, damage: 13, reach: 0.58, windup: 0.62, cooldown: 1.65, xp: 32, gold: 13, size: 0.65 },
-  knight: { name: 'Hollow knight', hp: 100, speed: 0.55, damage: 20, reach: 0.75, windup: 1.15, cooldown: 2, xp: 48, gold: 20, size: 0.83 },
-  boss: { name: 'The Hollow Warden', hp: 560, speed: 0.62, damage: 26, reach: 1.2, windup: 1.25, cooldown: 1.7, xp: 200, gold: 100, size: 1.45 },
+  imp: { name: 'Inkling', hp: 44, speed: 0.72, damage: 9, cooldown: 1.45, xp: 22, gold: 9, size: 0.58 },
+  wolf: { name: 'Briar hound', hp: 65, speed: 1.05, damage: 13, cooldown: 1.65, xp: 32, gold: 13, size: 0.65 },
+  knight: { name: 'Hollow knight', hp: 100, speed: 0.55, damage: 20, cooldown: 2, xp: 48, gold: 20, size: 0.83 },
+  boss: { name: 'The Hollow Warden', hp: 560, speed: 0.62, damage: 26, cooldown: 1.7, xp: 200, gold: 100, size: 1.45 },
 };
 export const levelFor = xp => Math.min(10, 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 75)));
 export const xpFor = level => (level - 1) ** 2 * 75;
