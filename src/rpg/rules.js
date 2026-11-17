@@ -1,3 +1,5 @@
+import { freshInventory, sanitizeInventory, ITEMS } from './inventory.js';
+import { freshChapter, sanitizeChapter } from './thornbound-rules.js';
 export const WEAPONS = [
   { id: 'sword', name: 'Wayfarer’s blade', short: 'Sword', level: 1, damage: 22, reach: 1.05, arc: 1.35, speed: 0.28, cost: 10, color: '#f9dea2', description: 'A nimble blade. Three quick cuts finish with a powerful flourish.' },
   { id: 'axe', name: 'Briarwood cleaver', short: 'Axe', level: 2, damage: 36, reach: 0.98, arc: 1.65, speed: 0.48, cost: 17, color: '#f0a27a', description: 'Heavy sweeping blows. Excellent against a crowded trail.' },
@@ -13,10 +15,10 @@ export const levelFor = xp => Math.min(10, 1 + Math.floor(Math.sqrt(Math.max(0, 
 export const xpFor = level => (level - 1) ** 2 * 75;
 export const maxHealth = xp => 100 + (levelFor(xp) - 1) * 18;
 export const upgradeCost = rank => 35 + rank * 30;
-export const freshSave = () => ({ version: 1, xp: 0, gold: 0, kills: 0, weapon: 0, upgrades: 0, potions: 3, bossDefeated: false, lanternBlessing: false, courier: { accepted: false, startKills: 0, claimed: false } });
+export const freshSave = () => ({ version: 2, xp: 0, gold: 0, kills: 0, weapon: 0, upgrades: 0, potions: 3, bossDefeated: false, lanternBlessing: false, courier: { accepted: false, startKills: 0, claimed: false }, inventory: freshInventory(), chapter: freshChapter() });
 export function sanitizeSave(raw) {
   const clean = freshSave();
-  if (!raw || raw.version !== 1) return clean;
+  if (!raw || ![1,2].includes(raw.version)) return clean;
   for (const key of ['xp', 'gold', 'kills', 'upgrades', 'potions']) {
     const cap = key === 'upgrades' ? 5 : key === 'potions' ? 5 : 1e7;
     if (Number.isFinite(raw[key])) clean[key] = Math.max(0, Math.min(cap, Math.floor(raw[key])));
@@ -27,6 +29,9 @@ export function sanitizeSave(raw) {
   if (raw.courier?.accepted === true && Number.isFinite(raw.courier.startKills)) {
     clean.courier = { accepted: true, startKills: Math.max(0, Math.min(clean.kills, Math.floor(raw.courier.startKills))), claimed: raw.courier.claimed === true };
   }
+  clean.inventory=sanitizeInventory(raw.inventory,raw.version===1?clean:null);
+  clean.weapon=ITEMS[clean.inventory.equipped.weapon].weapon;
+  clean.chapter=sanitizeChapter(raw.chapter);
   return clean;
 }
 /** A directional melee sector; a target directly underfoot can always be hit. */

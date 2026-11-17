@@ -385,6 +385,8 @@ For future puzzle props, collision must follow the authored physical state: a do
 
 ## How the map and journal should work
 
+The [world and chapter atlas](ATLAS-GUIDE.md) places battles, puzzles, safe points, optional stories, and rewards across all 21 chapters. The [inventory design](INVENTORY-DESIGN.md) defines equipment slots and ties named weapons, armor, and magic items to those map locations. Both remain design plans for the campaign.
+
 The **library map** shows books as physical volumes on shelves. A sealed book has red stitches; an open one has a bookmark; a freed one has a repaired spine and a visible contribution to the Margin. Selecting a book opens its table of contents.
 
 The **book map** shows authored chapter landmarks connected by unfolding paths, with explored procedural outskirts around them. Named quest locations remain visible once discovered. The existing waystation marker, explored tiles, and zoomable atlas can support the first version.

@@ -27,6 +27,7 @@ test('invalid and old saves cannot create broken or locked loadouts',()=>{
 });
 test('earned progress survives save/reload, including upgrades and victory',()=>{
   const s={...freshSave(),xp:550,kills:12,weapon:2,upgrades:3,potions:1,gold:82,bossDefeated:true};
+  s.inventory.owned.pike=3;s.inventory.equipped.weapon='pike';s.inventory.shortcuts[2]='pike';
   assert.deepEqual(sanitizeSave(JSON.parse(JSON.stringify(s))),s);
 });
 test('quest advances through encounters, boss, and a completed epilogue',()=>{

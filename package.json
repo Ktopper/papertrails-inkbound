@@ -1,9 +1,9 @@
 {
   "name": "papertrails-inkbound",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "type": "module",
-  "description": "A pop-up paper action RPG: melee combat, living trails, and the Hollow Warden.",
+  "description": "A pop-up paper action RPG: the Thornbound Kingdom, melee battles, paper puzzles, and a working equipment satchel.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

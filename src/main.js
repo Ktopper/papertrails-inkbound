@@ -8,6 +8,7 @@ import { createLoop } from './core/loop.js';
 import { loadAssets } from './assets/loader.js';
 import { createWFC } from './world/wfc.js';
 import { createMoonveilWorld, createMoonveilLighting } from './world/moonveil.js';
+import { createThornboundWorld, createThornboundLighting } from './world/thornbound.js';
 import { createWorld } from './world/world.js';
 import { createTraveller } from './player/traveller.js';
 import { createControls } from './player/controls.js';
@@ -33,6 +34,7 @@ const seed = Number.isFinite(seedParam) ? seedParam : CONFIG.DEFAULT_SEED;
 const quality = QUALITY[params.get('quality')] ? params.get('quality') : CONFIG.DEFAULT_QUALITY;
 const muted = params.get('mute') === '1';
 const moonveil = params.get('level') === 'moonveil';
+const thornbound = !params.has('level') || params.get('level') === 'thornbound';
 const showHint = params.get('hint') !== '0';
 
 state.seed = seed;
@@ -49,20 +51,20 @@ async function boot() {
   materials.setTextures(assets.textures);
   const lights = createLights({ scene, quality });
   const wfc = createWFC({ seed });
-  const world = moonveil ? await createMoonveilWorld({ scene, seed }) : createWorld({ scene, assets, wfc, materials, quality });
+  const world = thornbound ? await createThornboundWorld({scene,seed}) : moonveil ? await createMoonveilWorld({ scene, seed }) : createWorld({ scene, assets, wfc, materials, quality });
   const traveller = createTraveller({ scene, assets, world, materials });
   const follow = createFollowCamera({ aspect: window.innerWidth / Math.max(1, window.innerHeight) });
-  if (moonveil) follow.setPose({ distance: 12.5, fov: 29, pitchDeg: 43 });
+  if (moonveil || thornbound) follow.setPose({ distance: 12.5, fov: 29, pitchDeg: 43 });
   const controls = createControls({ domElement: canvas, camera: follow.camera, traveller });
   const views = createViews({ follow }); // V cycles camera views
   const post = createPost({ renderer, scene, camera: follow.camera, quality });
   const audio = createPaperAudio({ muted });
   const music = createMusic({ audio });
-  const daynight = moonveil ? createMoonveilLighting() : createDayNight({ scene, night: params.get('night') === '1' });
+  const daynight = thornbound ? createThornboundLighting() : moonveil ? createMoonveilLighting() : createDayNight({ scene, night: params.get('night') === '1' });
   // ambient life + weather (leaves, snow, rain, birds, chimney smoke, fireflies ...): 2 draw calls; ?life=0 disables it
-  const life = moonveil || params.get('life') === '0' || CONFIG.life.enabled === false ? null : createLife({ scene, assets, wfc, world, daynight, camera: follow.camera, quality, seed });
+  const life = moonveil || thornbound || params.get('life') === '0' || CONFIG.life.enabled === false ? null : createLife({ scene, assets, wfc, world, daynight, camera: follow.camera, quality, seed });
   // living animals (cats, sheep, hens, ducks ...): cut-paper cards on risen tiles, 2 draw calls; ?animals=0 disables them
-  const animals = moonveil || params.get('animals') === '0' || CONFIG.animals.enabled === false ? null : createAnimals({ scene, renderer, world, wfc, traveller, daynight, assets, seed, quality });
+  const animals = moonveil || thornbound || params.get('animals') === '0' || CONFIG.animals.enabled === false ? null : createAnimals({ scene, renderer, world, wfc, traveller, daynight, assets, seed, quality });
   // Gameplay progress is saved independently for each world seed.
   const game = createGame({ scene, renderer, world, wfc, traveller, follow, controls, lights, post, daynight, music, audio, life, assets, materials, seed, quality });
   follow.setAssistGate(game.modal);
@@ -173,6 +175,9 @@ async function boot() {
   game.adventure.ready();
   document.getElementById('boot-status').hidden = true;
   if (import.meta.env.DEV && params.has('debug')) window.__inkbound = { game, traveller, world, follow, scene };
+  if (import.meta.env.DEV && params.has('debug')) {
+    const {createChapterDevtools}=await import('./rpg/devtools.js');createChapterDevtools({traveller,follow,controls,world});
+  }
 }
 
 boot().catch((err) => {

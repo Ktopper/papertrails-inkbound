@@ -11,12 +11,14 @@ import { createProgress } from './progress.js';
 import { createScraps } from './scraps.js';
 import { createLanterns } from './lanterns.js';
 import { createMoonveilMap } from './moonveilmap.js';
+import { createThornboundMap } from './thornboundmap.js';
 import { createAtlasMap } from './atlasmap.js';
 
 export function createGame(deps) {
   const { seed, traveller, persist = true } = deps;
   const moonveil = deps.world.id === 'moonveil';
-  const progress = createProgress({ seed: moonveil ? seed + 700000 : seed, persist });
+  const thornbound = deps.world.id === 'thornbound';
+  const progress = createProgress({ seed: thornbound ? seed + 1400000 : moonveil ? seed + 700000 : seed, persist });
   const game = { progress };
   // Nothing is lit before the traveller has taken his first steps: the start tile sits next to a market
   // and one of its lamps, and a reward that plays while the book is still opening is not felt (and not earned).
@@ -25,9 +27,9 @@ export function createGame(deps) {
   const spawnZ = traveller.position.z;
   const ctx = { ...deps, progress, game };
   const quiet = () => ({ update() {}, dispose() {} });
-  game.scraps = moonveil ? quiet() : createScraps(ctx);
-  game.lanterns = moonveil ? quiet() : createLanterns(ctx);
-  game.atlasmap = moonveil ? createMoonveilMap(ctx) : createAtlasMap(ctx);
+  game.scraps = moonveil || thornbound ? quiet() : createScraps(ctx);
+  game.lanterns = moonveil || thornbound ? quiet() : createLanterns(ctx);
+  game.atlasmap = thornbound ? createThornboundMap(ctx) : moonveil ? createMoonveilMap(ctx) : createAtlasMap(ctx);
   game.adventure = createAdventure(ctx);
   const parts = [game.scraps, game.lanterns, game.atlasmap, game.adventure];
   let lastCx = NaN;

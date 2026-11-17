@@ -1,18 +1,30 @@
 # Papertrails: The Inkbound
 
-A playable action RPG inside a living pop-up storybook. Take up a melee weapon, protect the unfolding trails, and defeat the Hollow Warden.
+A playable action RPG inside a living pop-up storybook. Restore the Thornbound Kingdom’s first road with melee combat, paper puzzles, and equipment found along the way.
 
 Built from [Ktopper/papertrails-fervor](https://github.com/Ktopper/papertrails-fervor), preserving its original world, assets, and exploration atlas. The local clone also retains the original Git history. The original Papertrails project is credited to [xikhar/papertrails](https://github.com/xikhar/papertrails).
 
 ## Play
 
-[Play The Inkbound](https://ktopper.github.io/papertrails-inkbound/) · [Enter Moonveil Ruins](https://ktopper.github.io/papertrails-inkbound/?level=moonveil&quality=med). You can also run locally using the instructions below.
+[Play Chapter 1](https://ktopper.github.io/papertrails-inkbound/?level=thornbound) · [Enter Moonveil Ruins](https://ktopper.github.io/papertrails-inkbound/?level=moonveil&quality=med). You can also run locally using the instructions below.
 
 Desktop keyboard and mouse recommended. Touch devices can tap the ground to walk and use the Strike, Heavy, and Dodge buttons.
 
-## Two worlds, faster combat
+## New in 0.6: A Road Out of Nowhere
 
-Choose **The Heartland** or **Moonveil Ruins** from the title screen or pause menu. Use `?level=moonveil` in the game URL to open the new level directly.
+**Book I, Chapter 1 of The Thornbound Kingdom** is now playable and opens by default. Speak to Mara, clear the split-log ambush, match the three workshop hinges, enter the abandoned mill’s separate paper interior, defeat its knight, and recover the bridge hinge. Crease school teaches **Fold**; set two anchors, survive the bridge defense, cross the restored road, and save the chapter ending. The return ladder takes you back to Mara. Chapter 2 remains planned content.
+
+**I** opens the paused satchel. Inspect, compare, and equip your active weapon, coat, boots, lantern focus, and two different charms. Assign owned weapons to **1–3**. The workshops award the **Bookbinder’s coat**; the mill chest awards the **Briarwood cleaver**; Crease school awards the **Creaseglass focus**. Escort Ivo past two postal signs and deliver a very late birthday letter to earn the **Last-tree postmark** charm, 65 gold, and two tonics (maximum five).
+
+**F** casts Fold in combat, interrupting and briefly creasing nearby enemies at an ink cost. The focus reduces that cost and extends the hold. **E** at a marked puzzle always casts for free, even with no focus equipped. The lantern and learned Fold cannot be dropped. Mara’s item workbench spends gold and repair paper to hone one selected weapon. Swapping equipment never refills health, stamina, or ink and cannot cancel an attack or dodge.
+
+The chapter map (**Tab**) marks encounters, hinges, doorways, rewards, and the current objective. Ink rivers and page edges are solid boundaries; repaired decks provide actual crossings. Mill crates and hard scenery block movement. Paper hinges and foreground fading are retained. Enemies route around hard props within the authored encounters.
+
+Save format 2 keeps equipment, ranks, shortcuts, story items, claimed rewards, completed puzzles, and bookmarks. Existing version-1 Heartland and Moonveil saves migrate in place with a backup, preserving XP, gold, weapon unlocks/upgrades, Pip’s blessing, Ivo’s contract, and the Warden. Saves remain separate per world and seed. Reload or defeat returns to a safe bookmark; claimed story rewards and completed encounters stay completed.
+
+## Other worlds and melee combat
+
+Choose **The Thornbound Kingdom**, **The Heartland**, or **Moonveil Ruins** from the title screen or pause menu. Use `?level=thornbound`, `?level=heartland`, or `?level=moonveil` to open a world directly.
 
 Moonveil now opens into **the Unwritten Wilds**, a seeded world that streams in every direction with no authored border. It keeps 25 neighbouring chunks resident and regenerates the same scenery when you return. Five region types combine over 50 illustrations: Moonveil Ruins, Mosswood Wilds, Frostleaf Heights, Amberfall Hamlets, and Blossom Reach. The generated Moonveil artwork is joined by the original repo’s trees, mushrooms, cottages, towers, markets, gardens, snow pines, lanterns, and props.
 
@@ -20,7 +32,7 @@ Scenery uses the original spring-driven paper hinges: it rises as you approach, 
 
 Solid Moonveil scenery now blocks across its printed footprint, including crates, rocks, buildings, and arch posts. The collision follows the artwork’s transparent cutout and rotation. Openings remain usable, soft foliage stays passable, and foreground fading never disables collisions. Procedural props move aside as whole pieces to preserve the main avenues.
 
-The [campaign design draft](docs/design/CAMPAIGN-DRAFT.md) maps six genre books and a final volume, including **The Thirteenth Campfire**, three letter spells, and physical paper puzzles. Those story systems are planned content; the current playable quest loop is described below.
+The [campaign design draft](docs/design/CAMPAIGN-DRAFT.md) maps six genre books and a final volume, including **The Thirteenth Campfire**. Chapter 1 and its Fold puzzles are playable; later chapters and the other letter spells remain planned content. The older free-roam quest loop is described below.
 
 ## Enemy attacks you can read
 
@@ -57,7 +69,7 @@ The cast now uses articulated 3D paper figures, with hinged arms and legs, turni
 
 Press **E** or tap the interaction button near a character to talk. NPCs offer dialogue and combat hints, and the journal tracks Ivo’s delivery and Pip’s blessing. Existing saves remain compatible; quest rewards can only be claimed once.
 
-## The adventure
+## The original free-roam adventure
 
 - **Three melee weapons:** a quick combo sword, a sweeping axe at level 2, and a long-reaching spear at level 3.
 - **Tactical combat:** directional hit detection, stamina, heavy attacks, guard, invincible dodge windows, hit reactions, and readable attack warnings. Heavy attacks bypass the Hollow Knight’s armor.
@@ -80,8 +92,10 @@ This is a complete first playable chapter loop, intended as a foundation for exp
 | Guard | Hold Q |
 | Dodge | Space, in your movement direction |
 | Healing tonic | H |
+| Satchel: inspect, compare & equip | I |
+| Fold (after Crease school) | F |
 | Equip sword / axe / spear | 1 / 2 / 3 |
-| Speak to a nearby character | E, near Mara, Ivo, or Pip |
+| Speak, inspect a puzzle, collect a chest, enter a doorway | E |
 | Journal | R |
 | Atlas | Tab; Escape closes |
 | Pause | Escape |
