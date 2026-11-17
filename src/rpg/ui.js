@@ -1,0 +1,67 @@
+import { WEAPONS, levelFor, xpFor, maxHealth, questFor, upgradeCost } from './rules.js';
+const icons = {
+ sword:'<path d="m7 17 11-12 3-2-1 5L9 19M5 15l6 6M3 22l4-4"/>',
+ axe:'<path d="M6 22 17 3M10 6c6 0 8 4 10 7l-5 3-5-4M9 5l3 2"/>',
+ spear:'<path d="m3 23 14-16M13 8l3-6 7-1-2 7-6 3Z"/>',
+ leaf:'<path d="M20 3C8 1 2 8 4 15s15 7 16-12ZM4 22 16 7"/>',
+ shield:'<path d="m12 2 9 4-1 10-8 6-8-6L3 6ZM12 6v12"/>',
+ potion:'<path d="M9 2h6M10 3v6L5 16v5h14v-5l-5-7V3M7 15h10"/>',
+ book:'<path d="M12 5C8 2 4 2 2 3v17c4-2 7-1 10 1 3-2 6-3 10-1V3c-4-1-7 0-10 2Zm0 0v16"/>',
+ bolt:'<path d="m14 2-9 12h7l-2 8 10-13h-7Z"/>',
+};
+export const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.sword}</svg>`;
+export function createUI(actions, hasSave, realm={id:"heartland",name:"The Heartland"}) {
+  const root=document.createElement('div');root.id='rpg';root.classList.toggle('moonveil',realm.id==='moonveil');root.style.setProperty('--moonveil-backdrop',`url("${import.meta.env.BASE_URL}textures/moonveil/backdrop.png")`);document.body.append(root);
+  const realms=`<div class="realm-choices" aria-label="Choose a level"><a href="?level=heartland" class="${realm.id==='heartland'?'active':''}"><b>The Heartland</b><span>Autumn trails</span></a><a href="?level=moonveil" class="${realm.id==='moonveil'?'active':''}"><b>Moonveil Ruins</b><span>New · Moonlit forest</span></a></div>`;
+  root.innerHTML=`
+    <div id="damage-flash"></div><div class="vignette"></div>
+    <header class="hud"><div class="hero-panel"><span class="hero-seal">${icon('leaf')}<b id="level">1</b></span><div class="vitals"><div class="hero-line"><span>THE WAYFARER</span><small id="hp-label">100 / 100</small></div><div class="meter health"><i id="hp-fill"></i></div><div class="meter stamina"><i id="stamina-fill"></i></div><div class="xp-line"><span id="rank">A story begins</span><span id="gold">0 gold</span></div><div class="meter experience"><i id="xp-fill"></i></div></div></div>
+    <div class="world-title"><span>PAPERTRAILS</span><b>THE INKBOUND</b><small id="region">${realm.name.toUpperCase()}</small></div>
+    <nav><button data-action="journal" title="Journal (R)">${icon('book')}<span>Journal <kbd>R</kbd></span></button><button data-action="map" title="Atlas (Tab)">Atlas <kbd>Tab</kbd></button><button data-action="pause" title="Pause (Esc)">Ⅱ</button></nav></header>
+    <aside class="quest hud"><span class="eyebrow" id="chapter">CHAPTER I</span><h2 id="quest-title">Ink on the wind</h2><p id="quest-text"></p><div class="quest-bottom"><span id="quest-count">0 / 4</span><div class="meter"><i id="quest-fill"></i></div></div></aside>
+    <div id="boss-bar" hidden><span>THE HOLLOW WARDEN</span><div class="meter"><i id="boss-fill"></i></div><small>The last unwritten page</small></div>
+    <div id="waypoint" class="hud"><span id="waypoint-arrow">↑</span><small id="waypoint-label">The trail awaits</small></div>
+    <div id="toast" role="status" aria-live="polite"></div><div id="floaters" aria-hidden="true"></div>
+    <div id="interaction" class="hud" hidden><button data-action="camp"><kbd>E</kbd> Speak to Mara <span>· Rest & forge</span></button></div>
+    <footer class="hud"><div class="controls-note"><b>A WORLD STILL BEING WRITTEN</b><span><kbd>WASD</kbd> Move · <kbd>Shift</kbd> Run · <kbd>Space</kbd> Dodge</span></div><div class="loadout">${WEAPONS.map((w,i)=>`<button class="weapon" data-weapon="${i}" title="${w.name}"><kbd>${i+1}</kbd>${icon(w.id)}<span>${w.short}</span><small class="lock">LV ${w.level}</small></button>`).join('')}<span class="divider"></span><button class="potion" data-action="potion" title="Drink a healing tonic (H)"><kbd>H</kbd>${icon('potion')}<span id="potions">3</span></button></div><div class="combat-note"><span><kbd>J / Click</kbd> Strike</span><span><kbd>K / Right click</kbd> Heavy · <kbd>Q</kbd> Guard</span></div></footer>
+    <div id="touch-controls" class="hud"><button data-action="dodge">Dodge</button><button data-action="heavy">Heavy</button><button data-action="attack">Strike</button></div>
+    <section id="screen" class="screen"><div class="title-page"><div class="edition"><span>AN ADVENTURE IN PAPER</span><span>VOL. I</span></div><div class="title-ornament">✧</div><p class="eyebrow">PAPERTRAILS</p><h1>The<br><em>Inkbound.</em></h1><div class="title-rule"><i></i>✦<i></i></div><p class="story">Every great story needs a little courage.</p><p class="intro">Something dark is spilling between the pages. Take up your blade, follow the lanterns, and fight for a world worth saving.</p>${realms}<button class="primary" id="begin" data-action="start" disabled>Unfolding the world… <span>↗</span></button><p class="save-note">${hasSave?'Your saved adventure is waiting.':'A handcrafted world. An unwritten adventure.'}</p><div class="title-details"><span>${icon('sword')} MELEE COMBAT</span><span>${icon('book')} ENDLESS EXPLORATION</span></div></div><div class="cover-caption"><span>${realm.name.toUpperCase()}</span><p>${realm.id==='moonveil'?'Beyond the last lantern.':'Where the first page turns.'}</p><small>Walk softly. Carry a sharp blade.</small></div></section>
+    <dialog id="panel"><button class="close" data-action="close" aria-label="Close dialog">×</button><div id="panel-content"></div></dialog>`;
+  const el=id=>root.querySelector('#'+id);
+  const onClick=e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.dataset.weapon!==undefined)actions.equip(+btn.dataset.weapon);else actions[btn.dataset.action]?.();};
+  root.addEventListener('click',onClick);
+  const dialog=el('panel');dialog.addEventListener('cancel',e=>{e.preventDefault();actions.close();});
+  let toastTime=0;
+  return {
+    ready(){el('begin').disabled=false;el('begin').innerHTML=`${hasSave?'Continue adventure':'Begin your adventure'} <span>↗</span>`;},
+    start(){el('screen').hidden=true;root.classList.add('playing');},
+    toast(message){el('toast').textContent=message;el('toast').classList.add('visible');clearTimeout(toastTime);toastTime=setTimeout(()=>el('toast').classList.remove('visible'),3500);},
+    damage(){el('damage-flash').classList.remove('hit');void el('damage-flash').offsetWidth;el('damage-flash').classList.add('hit');},
+    panel(type,save){
+      const q=questFor(save);let content='';
+      if(type==='journal') content=`<p class="eyebrow">THE WAYFARER’S JOURNAL</p><h2>A tale in three chapters</h2><p>The Hollow Warden is bleeding ink into the book. Mara, the last cartographer, has asked you to guard its living pages.</p><ol class="chapters"><li class="${save.kills>=4?'done':''}"><b>I. Ink on the wind</b><span>Defeat 4 Inkbound. Earn the Briarwood cleaver at level 2.</span></li><li class="${save.kills>=10?'done':''}"><b>II. The gathering dark</b><span>Defeat 10 Inkbound to draw out their master. The pike unlocks at level 3.</span></li><li class="${save.bossDefeated?'done':''}"><b>III. The last unwritten page</b><span>Defeat the Hollow Warden. Dodge the violet shockwave when its crown flares.</span></li></ol><p class="journal-tip">Hold Strike for flowing combos. Heavy attacks break guard. Watch the red warning rings, keep some stamina for a dodge, and visit Mara to restore your health and tonics.</p><div class="panel-stats"><span>Level <b>${levelFor(save.xp)}</b></span><span>Defeated <b>${save.kills}</b></span><span>Gold <b>${save.gold}</b></span></div>`;
+      if(type==='pause') content=`<p class="eyebrow">A MOMENT BETWEEN PAGES</p><h2>Catch your breath.</h2><p>Your adventure is saved automatically. Take your time.</p><button class="primary" data-action="close">Return to the trail <span>↗</span></button>${realms}<div class="pause-buttons"><button data-action="music">Toggle music <kbd>M</kbd></button><button data-action="night">Day / night <kbd>N</kbd></button><button data-action="newGame">Start a new story</button></div><p class="journal-tip">WASD move · Shift run · J or left click strike · K or right click heavy · Q hold guard · Space dodge · H tonic · 1–3 weapons · E camp · R journal · Tab atlas · V camera</p>`;
+      if(type==='camp') content=`<p class="eyebrow">MARA’S WAYSTATION</p><h2>“The page is not lost yet.”</h2><p>“There’s strength in you, Wayfarer. Rest here a while. I’ll mend what I can, and sharpen what I must.”</p><div class="camp-options"><button data-action="rest">${icon('potion')}<span><b>Rest by the lantern</b><small>Restore health & refill 3 tonics</small></span><em>Free</em></button><button data-action="upgrade" ${save.upgrades>=5||save.gold<upgradeCost(save.upgrades)?'disabled':''}>${icon('sword')}<span><b>Hone your weapons · ${save.upgrades}/5</b><small>+4 damage to every melee weapon</small></span><em>${save.upgrades>=5?'Mastered':upgradeCost(save.upgrades)+' gold'}</em></button></div><p class="save-note">Your purse: ${save.gold} gold · Progress saved</p>`;
+      if(type==='death') content=`<p class="eyebrow">NOT EVERY PAGE IS EASY</p><h2>Your story isn’t over.</h2><p>Mara found you on the trail. Your experience and equipment are safe. Ten gold went toward mending your torn coat.</p><button class="primary" data-action="revive">Return to the waystation <span>↗</span></button>`;
+      if(type==='victory') content=`<p class="eyebrow">THE INK RECEDES</p><h2>You saved this story.</h2><p>The Hollow Warden folds into a thousand harmless scraps. The lanterns burn a little brighter. Somewhere, a blank page turns.</p><div class="panel-stats"><span>Level <b>${levelFor(save.xp)}</b></span><span>Defeated <b>${save.kills}</b></span><span>Gold <b>${save.gold}</b></span></div><button class="primary" data-action="close">Keep exploring <span>↗</span></button>`;
+      if(type==='reset') content=`<p class="eyebrow">A FRESH CHAPTER</p><h2>Start a new story?</h2><p>This resets this world’s RPG character, equipment upgrades, and quest progress. Your exploration atlas stays.</p><button class="primary" data-action="reset">Begin again</button><button class="secondary" data-action="close">Keep my adventure</button>`;
+      el('panel-content').innerHTML=content;if(!dialog.open)dialog.showModal();
+    },
+    close(){dialog.close();},
+    mapping(open){root.classList.toggle('mapping',open);},
+    update(save,health,stamina,nearCamp,region,boss,guarding){
+      const level=levelFor(save.xp),q=questFor(save),max=maxHealth(save.xp);
+      el('level').textContent=level;el('hp-label').textContent=`${Math.ceil(health)} / ${max}`;
+      el('hp-fill').style.width=`${Math.max(0,health/max*100)}%`;el('stamina-fill').style.width=`${stamina}%`;
+      el('rank').textContent=guarding?'GUARDING':`LEVEL ${level} · ${save.xp} XP`;el('gold').textContent=`${save.gold} gold`;
+      el('xp-fill').style.width=`${level===10?100:(save.xp-xpFor(level))/(xpFor(level+1)-xpFor(level))*100}%`;
+      el('chapter').textContent=q.chapter;el('quest-title').textContent=q.title;el('quest-text').textContent=q.text;el('quest-count').textContent=`${q.count} / ${q.total}`;el('quest-fill').style.width=`${q.count/q.total*100}%`;
+      el('potions').textContent=save.potions;el('interaction').hidden=!nearCamp;el('region').textContent=region;
+      for(const btn of root.querySelectorAll('[data-weapon]')){const i=+btn.dataset.weapon;btn.classList.toggle('selected',i===save.weapon);btn.classList.toggle('locked',level<WEAPONS[i].level);btn.setAttribute('aria-pressed',String(i===save.weapon));btn.querySelector('.lock').hidden=level>=WEAPONS[i].level;}
+      el('boss-bar').hidden=!boss;if(boss)el('boss-fill').style.width=`${boss.hp/boss.maxHp*100}%`;
+    },
+    waypoint(label,angle){el('waypoint-label').textContent=label;el('waypoint-arrow').style.transform=`rotate(${angle}rad)`;},
+    floater(text,x,y,color){const f=document.createElement('span');f.className='floater';f.textContent=text;f.style.cssText=`left:${x}px;top:${y}px;color:${color}`;el('floaters').append(f);setTimeout(()=>f.remove(),850);},
+    dispose(){clearTimeout(toastTime);root.remove();},
+  };
+}
