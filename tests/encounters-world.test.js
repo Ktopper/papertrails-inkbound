@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { ENEMY_ATTACKS, enemyAttackHits, attackOutline, windupDuration } from '../src/rpg/enemy-attacks.js';
 import { enemyPose } from '../src/rpg/enemy-motion.js';
-import { chunkLayout, propObstacles, residentCoordinates, regionAt, REGIONS } from '../src/world/moonveil-layout.js';
+import { chunkLayout, residentCoordinates, regionAt, REGIONS } from '../src/world/moonveil-layout.js';
 import { createFoldInstance } from '../src/world/fold.js';
 import fs from 'node:fs';
+import { propObstacles, paperClearance, reservePaperRoutes } from '../src/world/paper-collision.js';
 
 test('enemy tells give reaction time and all four silhouettes are distinct',()=>{
   const poses=[];
@@ -48,11 +49,11 @@ test('regions provide valid, varied paper art and keep avenues and arch openings
   const seen=new Set(),regions=new Set();
   for(let cz=-8;cz<=8;cz++)for(let cx=-8;cx<=8;cx++){
     const layout=chunkLayout(42,cx,cz);regions.add(regionAt(42,layout.x,layout.z).name);
-    const blockers=layout.props.flatMap(propObstacles);
+    const blockers=layout.props.flatMap(p=>{const aspect=p.asset.startsWith('moon:')?1:sprites[p.asset].aspect;const spans=p.asset==='moon:1'||p.asset==='wisteria_arch_0'?[[.02,.2],[.8,.98]]:[[0,1]];const profile={aspect,bands:Array.from({length:32},()=>spans)};return propObstacles(reservePaperRoutes(p,profile,layout.x,layout.z),profile);});
     for(const p of layout.props){seen.add(p.asset);assert(p.asset.startsWith('moon:')||sprites[p.asset],p.asset);}
     for(let t=-6;t<=6;t+=.2){
-      assert(blockers.every(o=>Math.hypot(layout.x-o.x,layout.z+t-o.z)-o.r>.2),'north/south corridor');
-      assert(blockers.every(o=>Math.hypot(layout.x+t-o.x,layout.z-o.z)-o.r>.2),'east/west corridor');
+      assert(paperClearance(blockers,layout.x,layout.z+t)>.2,'north/south corridor');
+      assert(paperClearance(blockers,layout.x+t,layout.z)>.2,'east/west corridor');
     }
   }
   assert.equal(regions.size,REGIONS.length);assert(seen.size>=50);

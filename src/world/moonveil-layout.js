@@ -28,8 +28,4 @@ export function chunkLayout(seed,cx,cz) {
   return {cx,cz,x,z,region,props};
 }
 
-export function propObstacles(p){
-  if(p.asset==='moon:1'||p.asset==='wisteria_arch_0')return [{x:p.x-p.size*.35,z:p.z,r:.22},{x:p.x+p.size*.35,z:p.z,r:.22}];
-  return p.block>0?[{x:p.x,z:p.z,r:p.block}]:[];
-}
 export function residentCoordinates(x,z,radius=2){const cx=Math.round(x/CHUNK_SIZE),cz=Math.round(z/CHUNK_SIZE),coords=[];for(let dz=-radius;dz<=radius;dz++)for(let dx=-radius;dx<=radius;dx++)coords.push([cx+dx,cz+dz]);return coords;}

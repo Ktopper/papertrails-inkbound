@@ -18,6 +18,10 @@ Moonveil now opens into **the Unwritten Wilds**, a seeded world that streams in 
 
 Scenery uses the original spring-driven paper hinges: it rises as you approach, overshoots and quivers, then folds down behind you. Arch openings and connecting avenues stay walkable. The atlas follows the player, shows explored ground, zooms from 24 to 384 metres across, and can centre on Mara’s waystation. The original three generated images and prompts remain in `public/textures/moonveil/`.
 
+Solid Moonveil scenery now blocks across its printed footprint, including crates, rocks, buildings, and arch posts. The collision follows the artwork’s transparent cutout and rotation. Openings remain usable, soft foliage stays passable, and foreground fading never disables collisions. Procedural props move aside as whole pieces to preserve the main avenues.
+
+The [campaign design draft](docs/design/CAMPAIGN-DRAFT.md) maps six genre books and a final volume, including **The Thirteenth Campfire**, three letter spells, and physical paper puzzles. Those story systems are planned content; the current playable quest loop is described below.
+
 ## Enemy attacks you can read
 
 Each enemy locks its aim during the warning, holds a distinct pose, then releases its strike. A marked ground area, shrinking countdown ring, sound cue, and on-screen attack name explain the threat. The marked area is also the damage footprint; stepping outside it avoids the attack. At most two enemies begin an attack at once.
