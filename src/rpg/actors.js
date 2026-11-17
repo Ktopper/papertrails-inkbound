@@ -1,31 +1,39 @@
 import * as THREE from 'three';
 import { createWeapon, disposeObject } from './art.js';
+import { cardstockPrint, cardGeometry, paperRectangle, paperDisc, foldedPaperBox } from './cardstock.js';
 
-// Each figure is a small articulated paper sculpture, facing local +Z.
-// Materials are shared within a figure; no textures or external models are needed.
-export function createActor(kind, size = 1) {
+// Articulated puppets made of printed cardstock; local +Z is forward.
+// Folded boxes and simple faceted volumes carry the same paper finish as the hero;
+// masks, shields, cloth, and crown details remain thin cut sheets.
+export function createActor(kind, size = 1, {paperMaterials=null} = {}) {
   const group = new THREE.Group(), rig = new THREE.Group();
   group.add(rig); rig.scale.setScalar(size);
   const materials = [], joints = {};
+  const cutout=['imp','wolf','knight','boss'].includes(kind),layerDepth=1;
   const mat = (color, glow = false) => {
-    const m = new THREE.MeshStandardMaterial({ color, roughness: .95, flatShading: true,
-      ...(glow ? { emissive: color, emissiveIntensity: .75 } : {}) });
+    const template=paperMaterials?.paper({color,side:THREE.DoubleSide,variant:'traveller',...(glow?{emissive:color,emissiveIntensity:.75}:{})});
+    const m=template?template.clone():new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide,...(glow?{emissive:color,emissiveIntensity:.75}:{})});
+    // Own the clone so per-enemy hit flashes/disposal never change another figure.
+    if(template){m.onBeforeCompile=template.onBeforeCompile;m.customProgramCacheKey=template.customProgramCacheKey;}
+    m.map=cardstockPrint();
     m.userData.baseGlow = glow ? .75 : 0; materials.push(m); return m;
   };
   const ink = mat('#283f48'), cream = mat('#ead8ad'), gold = mat('#b68b48');
   const skin = mat(kind === 'imp' ? '#8ba994' : '#d4ac80');
   const armor = mat(kind === 'boss' ? '#69536f' : '#637b7e');
   const cloth = mat(kind === 'camp' ? '#4c786d' : kind === 'courier' ? '#71834f' : kind === 'moth' ? '#8e739f' : '#a96247');
+  const edge = mat('#f1dfb8');
   const dark = mat('#39404c'), glow = mat(kind === 'boss' ? '#d4a0ee' : '#ffd78a', true);
   function mesh(parent, geometry, material, x=0, y=0, z=0) {
-    const m = new THREE.Mesh(geometry, material); m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; parent.add(m); return m;
+    const m = new THREE.Mesh(geometry, geometry.userData.cardstock?[material,edge]:material); m.position.set(x,y,z*layerDepth); m.castShadow=true; m.receiveShadow=true; parent.add(m); return m;
   }
-  const box = (p,w,h,d,m,x=0,y=0,z=0) => mesh(p,new THREE.BoxGeometry(w,h,d),m,x,y,z);
-  const orb = (p,r,m,x=0,y=0,z=0) => mesh(p,new THREE.IcosahedronGeometry(r,0),m,x,y,z);
-  const cone = (p,r,h,m,x=0,y=0,z=0,n=5) => mesh(p,new THREE.ConeGeometry(r,h,n),m,x,y,z);
-  const joint = (name,parent,x,y,z) => {const g=new THREE.Group();g.name=name;g.position.set(x,y,z);parent.add(g);joints[name]=g;return g;};
+  const box = (p,w,h,d,m,x=0,y=0,z=0) => mesh(p,cutout?(d>=.085&&Math.min(w,h)>.055?foldedPaperBox(w,h,d):paperRectangle(w,h)):new THREE.BoxGeometry(w,h,d),m,x,y,z);
+  const orb = (p,r,m,x=0,y=0,z=0) => mesh(p,cutout&&r<=.07?paperDisc(r):new THREE.IcosahedronGeometry(r,0),m,x,y,z);
+  const cone = (p,r,h,m,x=0,y=0,z=0,n=5) => mesh(p,cutout?cardGeometry([[-r,-h/2],[r,-h/2],[r*.08,h/2]]):new THREE.ConeGeometry(r,h,n),m,x,y,z);
+  const joint = (name,parent,x,y,z) => {const g=new THREE.Group();g.name=name;g.position.set(x,y,z*layerDepth);parent.add(g);joints[name]=g;return g;};
   function limb(name, parent, x, y, z, length, width, material, boot = false) {
     const pivot=joint(name,parent,x,y,z);box(pivot,width,length,.12,material,0,-length/2,0);
+    if(cutout){orb(pivot,width*.18,gold,0,-.025,.06);box(pivot,width*.45,.018,.01,cream,0,-length*.55,.04);}
     if(boot)box(pivot,width*1.25,.09,.19,ink,0,-length+.025,.035);
     else orb(pivot,width*.55,skin,0,-length,0);
     return pivot;
@@ -51,12 +59,14 @@ export function createActor(kind, size = 1) {
     const boss=kind==='boss', knight=kind==='knight'||boss, npc=['camp','courier','moth'].includes(kind);
     const body=joint('body',rig,0,.43,0);
     box(body,knight?.32:.27,.32,.18,knight?armor:cloth,0,.12,0);
+    if(cutout)for(const side of [-1,1]){const fold=box(body,.085,.29,.01,cloth,side*.12,.12,-.045);fold.rotation.y=side*.6;}
     box(body,.29,.055,.21,gold,0,-.025,.005);
     box(body,.075,.065,.025,cream,.03,-.025,.12);
     const head=joint('head',body,0,.38,0);
     orb(head,.16,knight?armor:skin,0,.03,0);
-    box(head,.16,.04,.03,ink,0,.04,.14);
-    for(const side of [-1,1])box(head,.035,.028,.02,npc?ink:glow,side*.052,.045,.161);
+    if(cutout)mesh(head,paperDisc(.14),knight?armor:skin,0,.03,.142);
+    box(head,.16,.04,.03,ink,0,.04,cutout?.16:.14);
+    for(const side of [-1,1])box(head,.035,.028,.02,npc?ink:glow,side*.052,.045,cutout?.183:.161);
     const left=limb('armL',body,-.205,.25,0,.27,.09,knight?armor:cloth);
     const right=limb('armR',body,.205,.25,0,.27,.09,knight?armor:cloth);
     for(const side of [-1,1]) {
@@ -70,7 +80,7 @@ export function createActor(kind, size = 1) {
       cone(head,.05,.23,cloth,0,.25,-.015,4).rotation.x=-.4;
       const shield=box(left,.23,.3,.055,boss?gold:ink,0,-.22,.09);shield.rotation.z=-.12;
       box(left,.15,.21,.025,armor,0,-.22,.125);box(left,.025,.15,.025,cream,0,-.22,.145);
-      const weapon=createWeapon(boss?1:0);weapon.rotation.x=Math.PI*.45;weapon.position.set(0,-.27,.025);weapon.scale.setScalar(boss?1.45:1.05);right.add(weapon);
+      const weapon=createWeapon(boss?1:0);weapon.traverse(m=>{if(m.isMesh){const previous=m.material;m.material=mat('#'+previous.color.getHexString());previous.dispose();}});weapon.rotation.x=Math.PI*.45;weapon.position.set(0,-.27,.025);weapon.scale.setScalar(boss?1.45:1.05);right.add(weapon);
       box(body,.2,.15,.035,ink,0,.14,.11);orb(body,.055,glow,0,.14,.145);
       if(boss) {
         const crown=joint('crown',head,0,.19,0);
@@ -81,6 +91,7 @@ export function createActor(kind, size = 1) {
       for(const side of [-1,1]){const ear=cone(head,.08,.23,skin,side*.16,.1,0,3);ear.rotation.z=-side*.9;}
       cone(head,.16,.27,cloth,0,.23,-.025,4).rotation.z=-.3;
       box(body,.32,.075,.23,cloth,0,.26,.01);
+      for(let i=0;i<4;i++)box(body,.025,.008,.01,cream,-.1+i*.065,.26,.055);
       const scarf=box(cape,.1,.25,.025,cloth,-.12,-.07,-.06);scarf.rotation.z=.5;
       const quill=cone(right,.07,.46,cream,0,-.22,.21,3);quill.rotation.x=1.25;
       box(right,.03,.03,.25,ink,0,-.27,.08);orb(left,.085,ink,0,-.26,.01);

@@ -11,7 +11,7 @@ import { createUI } from './ui.js';
 import './style.css';
 
 export function createAdventure(ctx) {
-  const { scene, traveller, world, follow, controls, game, seed, music, daynight, audio } = ctx;
+  const { scene, traveller, world, follow, controls, game, seed, music, daynight, audio, materials } = ctx;
   const key=`papertrails-inkbound-v1:${seed}${world.id==='moonveil'?':moonveil':''}`;
   let saved=null;try{saved=JSON.parse(localStorage.getItem(key));}catch{/* Storage may be unavailable. */}
   let save=sanitizeSave(saved), health=maxHealth(save.xp), stamina=100;
@@ -22,8 +22,8 @@ export function createAdventure(ctx) {
   const campPos=new THREE.Vector3(),facing=new THREE.Vector3(0,0,-1),dashDir=new THREE.Vector3(0,0,-1),lastInput={x:0,z:0};
   const aim=new THREE.Vector3(),ndc=new THREE.Vector2(),ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),projected=new THREE.Vector3();
   let pointerActive=false;
-  const camp=createActor('camp',.75);scene.add(camp.group);
-  const npcs=[{...camp,id:'camp',placed:false,barkAt:10},...['courier','moth'].map((id,i)=>{const actor=createActor(id,id==='moth'?.66:.73);actor.group.visible=false;scene.add(actor.group);return {...actor,id,placed:false,barkAt:18+i*9};})];
+  const camp=createActor('camp',.75,{paperMaterials:materials});scene.add(camp.group);
+  const npcs=[{...camp,id:'camp',placed:false,barkAt:10},...['courier','moth'].map((id,i)=>{const actor=createActor(id,id==='moth'?.66:.73,{paperMaterials:materials});actor.group.visible=false;scene.add(actor.group);return {...actor,id,placed:false,barkAt:18+i*9};})];
   const campRing=new THREE.Mesh(new THREE.RingGeometry(.58,.6,48),new THREE.MeshBasicMaterial({color:'#e5c584',transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false}));campRing.rotation.x=-Math.PI/2;campRing.position.y=.025;camp.group.add(campRing);
   const weaponPivot=new THREE.Group();traveller.rig.add(weaponPivot);weaponPivot.position.set(-.17,.33,.05);
   let weaponMesh=createWeapon(save.weapon);weaponPivot.add(weaponMesh);weaponMesh.scale.setScalar(1.22);
@@ -129,7 +129,7 @@ export function createAdventure(ctx) {
       return {x,z};
     }return null;
   }
-  function spawn(kind){const point=findSpawn(kind==='boss'?3:2.1,kind==='boss'?4.2:3.5);if(!point)return false;const spec=ENEMIES[kind],actor=createActor(kind,spec.size);actor.group.position.set(point.x,world.heightAt(point.x,point.z)||0,point.z);scene.add(actor.group);const barBack=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.034),new THREE.MeshBasicMaterial({color:'#3d3031'})),bar=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.025),new THREE.MeshBasicMaterial({color:kind==='boss'?'#c99ccf':'#c98468'}));barBack.position.y=spec.size+0.12;bar.position.y=spec.size+0.12;bar.position.z=.003;const healthBar=new THREE.Group();healthBar.add(barBack,bar);actor.group.add(healthBar);enemies.push({...actor,spec,kind,hp:spec.hp,maxHp:spec.hp,mode:'approach',timer:1,stun:0,flash:0,age:0,bar,barBack,healthBar,direction:new THREE.Vector3(0,0,1),attackDuration:kind==='wolf'?.38:.3,hit:false,recovery:spec.cooldown,side:random()>.5?1:-1,enraged:false});return true;}
+  function spawn(kind){const point=findSpawn(kind==='boss'?3:2.1,kind==='boss'?4.2:3.5);if(!point)return false;const spec=ENEMIES[kind],actor=createActor(kind,spec.size,{paperMaterials:materials});actor.group.position.set(point.x,world.heightAt(point.x,point.z)||0,point.z);scene.add(actor.group);const barBack=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.034),new THREE.MeshBasicMaterial({color:'#3d3031'})),bar=new THREE.Mesh(new THREE.PlaneGeometry(spec.size*.65,.025),new THREE.MeshBasicMaterial({color:kind==='boss'?'#c99ccf':'#c98468'}));barBack.position.y=spec.size+0.12;bar.position.y=spec.size+0.12;bar.position.z=.003;const healthBar=new THREE.Group();healthBar.add(barBack,bar);actor.group.add(healthBar);enemies.push({...actor,spec,kind,hp:spec.hp,maxHp:spec.hp,mode:'approach',timer:1,stun:0,flash:0,age:0,bar,barBack,healthBar,direction:new THREE.Vector3(0,0,1),attackDuration:kind==='wolf'?.38:.3,hit:false,recovery:spec.cooldown,side:random()>.5?1:-1,enraged:false});return true;}
   function clearEnemies(){for(const e of enemies)e.dispose();enemies.length=0;}
   function moveEnemy(e,dx,dz,dt){const p=e.group.position,step=e.spec.speed*(e.enraged?1.3:1)*dt;const a=Math.atan2(dz,dx);for(const offset of [0,.6*e.side,1.2*e.side,1.7*e.side,-.6*e.side]){const nx=p.x+Math.cos(a+offset)*step,nz=p.z+Math.sin(a+offset)*step;if(world.clearance(nx,nz)>.1){p.set(nx,world.heightAt(nx,nz)||0,nz);return;}}}
   function updateEnemies(dt){

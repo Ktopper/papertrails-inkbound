@@ -18,6 +18,12 @@ Moonveil is a new authored forest level with generated cut-paper trees, ivy arch
 
 Melee attacks now animate the shoulder, torso, and weapon together: anticipation, a fast cross-body cut, follow-through, and recovery. The sword alternates swing directions. Hold J / left click for repeated strikes, or K / right click for repeated heavy attacks. Base attack times: sword **0.28 s**, axe **0.48 s**, spear **0.35 s** (about 30–34% faster than the first build). Stamina still limits sustained attacks.
 
+## Paper silhouettes and clear sightlines
+
+Enemies combine real 3D boxes and faceted shapes with a matte printed paper finish, matching the player’s fibre lighting. Their bodies, limbs, and armor retain depth; die-cut masks, shields, capes, cream seams, and hinge details keep the handcrafted look. They keep their articulated walk cycles and attack animations. NPC surfaces use the same matte paper print.
+
+Trees, ruins, and other scenery between the camera and the player smoothly fade to 16% opacity, then return to solid when the view clears. The system checks the head, torso, and sides of the player, respects holes in printed artwork, and works in both Moonveil and the original Heartland. Collisions and combat stay active while scenery is translucent.
+
 ## The company between the pages
 
 The cast now uses articulated 3D paper figures, with hinged arms and legs, turning heads, layered clothes, armor, capes, and carried props. The enemies face their targets instead of rotating like flat billboards.
@@ -93,7 +99,8 @@ Useful URL options: `?quality=med` for balanced rendering, `?quality=low` for sl
 - `src/rpg/rules.js`: weapon/enemy balance, progression, save validation, and hit geometry.
 - `src/rpg/combat-motion.js`: swing phases, weapon timing, and body animation.
 - `src/world/moonveil.js` and `src/game/moonveilmap.js`: the new generated-art forest level and map.
-- `src/rpg/actors.js`: articulated paper figures and their walking, attack, and idle animations.
+- `src/rpg/actors.js` and `cardstock.js`: articulated die-cut paper figures, printed surfaces, and animations.
+- `src/render/visibility.js`: per-object scenery fading and sightline checks in both worlds.
 - `src/rpg/characters.js`: character identities, delivery progress, and one-time rewards.
 - `src/rpg/art.js`: melee weapon meshes.
 - `src/rpg/ui.js` and `style.css`: title screen, HUD, journal, camp, pause, death, and victory.

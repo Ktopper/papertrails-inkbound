@@ -23,6 +23,7 @@ import { createLife } from './life/life.js';
 import { createAnimals } from './life/animals.js';
 import { createGame } from './game/index.js';
 import { createViews } from './camera/views.js';
+import { createPlayerVisibility } from './render/visibility.js';
 // Allocation-free two-dimensional length.
 const hypot2 = (a, b) => Math.sqrt(a * a + b * b);
 
@@ -65,6 +66,7 @@ async function boot() {
   // Gameplay progress is saved independently for each world seed.
   const game = createGame({ scene, renderer, world, wfc, traveller, follow, controls, lights, post, daynight, music, audio, life, assets, materials, seed, quality });
   follow.setAssistGate(game.modal);
+  const visibility=createPlayerVisibility({scene,world,camera:follow.camera,traveller,artTexture:assets.textures.art});
   // N: day / night, M: music on / off (keys only - no on-screen UI)
   window.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -98,6 +100,7 @@ async function boot() {
     const rl = hypot2(_right.x, _right.z) || 1;
     state.listener.x = p.x; state.listener.z = p.z;
     state.listener.rightX = _right.x / rl; state.listener.rightZ = _right.z / rl;
+    visibility.beforeUpdate();
     world.update(dt, p, traveller.moveDir);
     views.update(dt);
     follow.update(dt, traveller);
@@ -107,13 +110,14 @@ async function boot() {
     game.update(dt);
     lights.update(dt, traveller, follow.camera);
     materials.update(dt);
+    visibility.update(dt);
   }
 
   function render(dt) {
     post.setFocus(follow.focusPoint);
     post.render(dt);
     game.atlasmap.render(); // Drawn over the finished frame; no-op while closed.
-    if (import.meta.env.DEV && params.has('debug') && state.frame % 15 === 0) canvas.dataset.diagnostics = JSON.stringify(game.adventure.snapshot());
+    if (import.meta.env.DEV && params.has('debug') && state.frame % 15 === 0) canvas.dataset.diagnostics = JSON.stringify({...game.adventure.snapshot(),visibility:visibility.snapshot()});
   }
 
   const loop = createLoop({ update, render });
